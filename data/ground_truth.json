@@ -1,0 +1,72 @@
+[
+  {
+    "id": "1",
+    "question": "Phạm vi điều chỉnh của Nghị định 168/2024/NĐ-CP là gì?",
+    "expected_law": "Nghị định 168/2024/NĐ-CP",
+    "expected_article": "1",
+    "type": "scope"
+  },
+  {
+    "id": "2",
+    "question": "Ùn tắc giao thông là gì?",
+    "expected_law": "36_2024_QH15_m_444251",
+    "expected_article": "2",
+    "type": "definition"
+  },
+  {
+    "id": "3",
+    "question": "Niên hạn sử dụng của xe ô tô chở hàng là bao nhiêu năm?",
+    "expected_law": "Nghị định 166_2024_ND-CP",
+    "expected_article": "18",
+    "type": "fact"
+  },
+  {
+    "id": "4",
+    "question": "Xe ô tô vượt đèn đỏ bị phạt bao nhiêu tiền?",
+    "expected_law": "Nghị định 168_2024_ND-CP",
+    "expected_article": "6",
+    "type": "penalty_complex"
+  },
+  {
+    "id": "5",
+    "question": "Người đi xe máy không đội mũ bảo hiểm bị phạt bao nhiêu?",
+    "expected_law": "Nghị định 168_2024_ND-CP",
+    "expected_article": "8",
+    "type": "penalty_common"
+  },
+  {
+    "id": "6",
+    "question": "Điều kiện kinh doanh dịch vụ kiểm định xe cơ giới là gì?",
+    "expected_law": "Nghị định 166_2024_ND-CP",
+    "expected_article": "5",
+    "type": "procedure"
+  },
+  {
+    "id": "7",
+    "question": "Mức phí sử dụng đường bộ cao tốc được quy định như thế nào?",
+    "expected_law": "Nghị định 130_2024_ND-CP",
+    "expected_article": "5",
+    "type": "finance"
+  },
+  {
+    "id": "8",
+    "question": "Xe máy chuyên dùng bao gồm những loại nào?",
+    "expected_law": "36_2024_QH15_m_444251",
+    "expected_article": "2",
+    "type": "definition"
+  },
+  {
+    "id": "9",
+    "question": "Thẩm quyền xử phạt của Cảnh sát giao thông?",
+    "expected_law": "Nghị định 168_2024_ND-CP",
+    "expected_article": "47",
+    "type": "authority"
+  },
+  {
+    "id": "10",
+    "question": "Uống rượu bia (có nồng độ cồn) lái xe ô tô phạt bao nhiêu?",
+    "expected_law": "Nghị định 168_2024_ND-CP",
+    "expected_article": "6",
+    "type": "penalty_high"
+  }
+]

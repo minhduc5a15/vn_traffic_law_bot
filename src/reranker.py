@@ -1,26 +1,31 @@
 from sentence_transformers import CrossEncoder
+from src.config import AppConfig
 
 
 class Reranker:
-    def __init__(self, model_name="BAAI/bge-reranker-v2-m3"):
-        self.device = "cpu"
+    def __init__(self):
         print(
-            f"⚖️  Đang tải Cross-Encoder (SOTA Multilingual): {model_name} trên {self.device.upper()}..."
+            f"⚖️  [Reranker] Loading: {AppConfig.RERANKER_MODEL} ({AppConfig.RERANKER_DEVICE})..."
         )
-        self.model = CrossEncoder(model_name, device=self.device)
-        print("   -> ✅ Reranker đã sẵn sàng (CPU Mode).")
+        self.model = CrossEncoder(
+            AppConfig.RERANKER_MODEL, device=AppConfig.RERANKER_DEVICE
+        )
+        print("   -> ✅ Reranker Ready.")
 
-    def rank_documents(self, query: str, documents: list, top_k=5):
+    def rank_documents(self, query: str, documents: list):
         if not documents:
             return []
 
         inputs = [[query, doc.page_content] for doc in documents]
 
-        scores = self.model.predict(inputs, batch_size=8, show_progress_bar=False)
+        # Predict scores
+        scores = self.model.predict(
+            inputs, batch_size=AppConfig.RERANKER_BATCH_SIZE, show_progress_bar=False
+        )
 
+        # Attach scores & Sort
         for doc, score in zip(documents, scores):
             doc.metadata["rerank_score"] = float(score)
 
         scored_docs = sorted(zip(documents, scores), key=lambda x: x[1], reverse=True)
-
-        return [doc for doc, score in scored_docs[:top_k]]
+        return [doc for doc, score in scored_docs[: AppConfig.RERANK_TOP_K]]

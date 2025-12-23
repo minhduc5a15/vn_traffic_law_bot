@@ -1,111 +1,88 @@
+import pickle
 import os
-
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
-
 from langchain_chroma import Chroma
-from langchain_community.retrievers import BM25Retriever
-from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
-import pickle
-
+from src.config import AppConfig
+from src.prompts import get_answer_prompt, get_query_transform_prompt
 from src.reranker import Reranker
 
 
 class TrafficLawRAG:
+    def __init__(self):
+        print(f"🚀 [RAG Engine] Starting... (LLM: {AppConfig.LLM_MODEL_NAME})")
 
-    def __init__(
-        self,
-        vector_db_path="./data/indexes/chroma_db",
-        bm25_path="./data/indexes/bm25_retriever.pkl",
-    ):
-        print("🚀 Khởi động Traffic Law RAG Engine (v2.0 - Query Expansion)...")
-
-        # 1. Load Embeddings
-        device = "cpu"
+        # 1. Embeddings
         self.embedding_model = HuggingFaceEmbeddings(
-            model_name="bkai-foundation-models/vietnamese-bi-encoder",
-            model_kwargs={"device": device},
+            model_name=AppConfig.EMBEDDING_MODEL,
+            model_kwargs={"device": AppConfig.EMBEDDING_DEVICE},
             encode_kwargs={"normalize_embeddings": True},
         )
 
         # 2. Vector DB
         self.vector_db = Chroma(
-            persist_directory=vector_db_path, embedding_function=self.embedding_model
+            persist_directory=AppConfig.VECTOR_DB_DIR,
+            embedding_function=self.embedding_model,
         )
 
         # 3. BM25
-        with open(bm25_path, "rb") as f:
+        with open(AppConfig.BM25_PATH, "rb") as f:
             self.bm25_retriever = pickle.load(f)
-        self.bm25_retriever.k = 15  # Lấy top 15 BM25
+        self.bm25_retriever.k = AppConfig.RETRIEVAL_BM25_K
 
         # 4. Reranker
         self.reranker = Reranker()
 
-        # 5. LLM Chính & LLM Query Gen
-        api_key = os.getenv("GOOGLE_API_KEY")
+        # 5. LLM (Gemini)
+        if not AppConfig.GOOGLE_API_KEY:
+            raise ValueError("❌ Missing GOOGLE_API_KEY in .env")
+
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash", temperature=0, api_key=api_key
+            model=AppConfig.LLM_MODEL_NAME,
+            temperature=0,
+            api_key=AppConfig.GOOGLE_API_KEY,
         )
 
-        # Prompt
-        self.answer_prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    """Bạn là Trợ lý Luật Giao thông AI.
-            Sử dụng thông tin sau để trả lời câu hỏi. 
-            - Trích dẫn chính xác (Nghị định, Điều, Khoản).
-            - Nếu không có thông tin, hãy nói không biết.
-            
-            CONTEXT:
-            {context}
-            """,
-                ),
-                ("human", "{question}"),
-            ]
-        )
-
-        # Prompt biến đổi câu hỏi
-        self.query_transform_prompt = ChatPromptTemplate.from_messages(
-            [
-                (
-                    "system",
-                    """Bạn là chuyên gia pháp lý. Nhiệm vụ của bạn là viết lại câu hỏi của người dùng thành một câu truy vấn tìm kiếm chuẩn xác trong văn bản luật.
-            - Dùng từ ngữ chuyên ngành (Ví dụ: "vượt đèn đỏ" -> "không chấp hành hiệu lệnh của đèn tín hiệu giao thông").
-            - Giữ nguyên ý định tìm mức phạt hoặc hành vi.
-            - Chỉ trả về câu viết lại, không giải thích gì thêm.""",
-                ),
-                ("human", "Câu hỏi: {question}"),
-            ]
-        )
+        # 6. Prompts
+        self.answer_prompt = get_answer_prompt()
+        self.query_transform_prompt = get_query_transform_prompt()
 
     def generate_legal_query(self, user_query: str):
-        print(f"   🔄 Đang chuẩn hóa câu hỏi: '{user_query}'")
-        response = (self.query_transform_prompt | self.llm).invoke(
-            {"question": user_query}
-        )
-        legal_query = response.content.strip()
-        print(f"   -> 🎯 Query Luật: '{legal_query}'")
-        return legal_query
+        print(f"   🔄 Normalizing query: '{user_query}'")
+        try:
+            response = (self.query_transform_prompt | self.llm).invoke(
+                {"question": user_query}
+            )
+            legal_query = response.content.strip()
+            print(f"   -> 🎯 Legal Query: '{legal_query}'")
+            return legal_query
+        except Exception as e:
+            print(f"   ⚠️ Error expanding query: {e}. Using original.")
+            return user_query
 
-    def retrieve_hybrid(self, query: str, top_k_final=5):
+    def retrieve_hybrid(self, query: str):
+        # Step 1: Query Expansion
         search_query = self.generate_legal_query(query)
 
-        docs_vector = self.vector_db.similarity_search(search_query, k=40)
+        # Step 2: Retrieval
+        docs_vector = self.vector_db.similarity_search(
+            search_query, k=AppConfig.RETRIEVAL_VECTOR_K
+        )
         docs_bm25 = self.bm25_retriever.invoke(search_query)
 
+        # Step 3: Deduplication
         unique_docs = {}
         for doc in docs_vector + docs_bm25:
+            # Dùng citation làm key để lọc trùng
             key = doc.metadata.get("citation", doc.page_content[:50])
             unique_docs[key] = doc
+
         merged_docs = list(unique_docs.values())
+        print(f"   -> Found {len(merged_docs)} potential candidates.")
 
-        print(f"   -> Tìm thấy {len(merged_docs)} tài liệu tiềm năng.")
-
+        # Step 4: Reranking
         print("   -> ⚖️  Reranking...")
-        final_docs = self.reranker.rank_documents(query, merged_docs, top_k=top_k_final)
-
+        final_docs = self.reranker.rank_documents(query, merged_docs)
         return final_docs
 
     def chat(self, user_query: str):
