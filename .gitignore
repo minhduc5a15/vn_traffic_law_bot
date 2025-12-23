@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+
+data/indexes/
+data/processed/
+
+*.db
+*.sqlite3
+*.bin
+*.pkl
+*.pickle
+
+.DS_Store
+Thumbs.db
+*.log
+.env
