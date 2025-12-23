@@ -7,10 +7,6 @@ class Reranker:
         print(
             f"⚖️  Đang tải Cross-Encoder (SOTA Multilingual): {model_name} trên {self.device.upper()}..."
         )
-        print(
-            "   ⚠️ Lưu ý: Chạy trên CPU sẽ chậm hơn một chút nhưng đảm bảo không bị Crash."
-        )
-
         self.model = CrossEncoder(model_name, device=self.device)
         print("   -> ✅ Reranker đã sẵn sàng (CPU Mode).")
 

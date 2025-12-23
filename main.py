@@ -75,14 +75,6 @@ def main():
         # Lưu ý: Indexer sẽ tự xử lý việc xóa DB cũ nếu cần (như logic đã viết trong src/indexing.py)
         indexer.build_indices(docs)
 
-        print("\n" + "=" * 50)
-        print("🎉 HOÀN TẤT TOÀN BỘ QUÁ TRÌNH SETUP!")
-        print("✅ Dữ liệu kiểm tra: xem thư mục ./debug_data")
-        print("✅ Vector DB: đã lưu tại ./chroma_db")
-        print("✅ BM25 Index: đã lưu tại ./bm25_retriever.pkl")
-        print("=" * 50)
-        print("👉 Bạn đã sẵn sàng cho Giai đoạn 3: Retrieval & Chat.")
-
     except Exception as e:
         print(f"\n❌ Lỗi trong quá trình Indexing: {e}")
 
