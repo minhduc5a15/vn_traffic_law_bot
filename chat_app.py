@@ -1,50 +1,45 @@
-import os
-
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
-from dotenv import load_dotenv
+import src
 from src.rag_engine import TrafficLawRAG
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
 
-
-# Load API Key
-load_dotenv()
+console = Console()
 
 
 def main():
-    print("🚦 HỆ THỐNG CHATBOT LUẬT GIAO THÔNG (HYBRID RAG) 🚦")
-    print("-" * 50)
+    console.print(
+        "🚦 [bold green]HỆ THỐNG CHATBOT LUẬT GIAO THÔNG (GEMINI RAG)[/bold green] 🚦"
+    )
+    console.print("-" * 50)
 
     try:
-        # Khởi tạo Engine (Load model mất khoảng 5-10s)
         bot = TrafficLawRAG()
     except Exception as e:
-        print(f"❌ Lỗi khởi tạo: {e}")
+        console.print(f"❌ [red]Init Error:[/red] {e}")
         return
 
-    print("\n✅ Hệ thống đã sẵn sàng! Gõ 'exit' để thoát.")
+    console.print("\n✅ [bold blue]Ready! Type 'exit' to quit.[/bold blue]")
 
     while True:
-        query = input("\n👤 Bạn: ")
+        query = console.input("\n👤 [bold yellow]Bạn:[/bold yellow] ").strip()
         if query.lower() in ["exit", "quit", "thoát"]:
             break
-
-        if not query.strip():
+        if not query:
             continue
 
         try:
-            # Gọi hàm chat
             answer, sources = bot.chat(query)
 
-            print(f"\n🤖 Bot: {answer}")
+            console.print(Panel(Markdown(answer), title="🤖 Bot", border_style="cyan"))
 
-            # Hiển thị nguồn trích dẫn (Evidence)
-            print("\n📚 Nguồn tham khảo (Top 3 Reranked):")
+            console.print("\n📚 [bold magenta]Nguồn tham khảo:[/bold magenta]")
             for i, doc in enumerate(sources[:3]):
-                score = doc.metadata.get("rerank_score", 0.0)
                 citation = doc.metadata.get("citation", "N/A")
-                print(f"   {i+1}. {citation} (Độ phù hợp: {score:.4f})")
+                console.print(f"   {i+1}. [italic]{citation}[/italic]")
 
         except Exception as e:
-            print(f"❌ Lỗi xử lý: {e}")
+            console.print(f"❌ [red]Error:[/red] {e}")
 
 
 if __name__ == "__main__":

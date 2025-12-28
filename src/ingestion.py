@@ -6,7 +6,7 @@ from typing import List, Dict
 
 
 class VietnameseLawParser:
-    def __init__(self, data_path: str):
+    def __init__(self, data_path: str = "data/raw"):
         self.data_path = data_path
 
     def load_and_parse(self) -> List[LangchainDocument]:
